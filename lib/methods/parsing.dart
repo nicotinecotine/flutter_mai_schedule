@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
-import 'package:flutter_mai_schedule/data.dart';
+import 'package:html/dom.dart';
+import 'package:flutter_mai_schedule/model/schedule_model.dart';
 
-Map<String, Map<int, List<String>>> dayCards = {};
-late http.Response response;
+Future<Schedule> fetchSchedule(String week, String group) async {
+  Map<String, Map<int, Map<String, String>>> homeMadeJson = {};
+  late http.Response response;
 
-Future<List<String>> getDataFromApi(String week, String group) async {
   if (week == 'Текущая') {
     try {
       response = await http.get(Uri.parse(
@@ -29,54 +30,47 @@ Future<List<String>> getDataFromApi(String week, String group) async {
     }
   }
 
-  dayCards = {};
+  var myHtml = parser.parse(response.body);
 
-  final document = parser.parse(response.body);
+  var steps =
+      myHtml.querySelector('.step.mb-5')!.querySelectorAll('.step-item');
 
-  final classElements = document.querySelectorAll('.step.mb-5');
+  List<List<Element>> subjects = [];
+  List<Element> days = [];
 
-  final classEntities = classElements.map((element) {
-    final text = element.text.trim();
+  for (var content in steps) {
+    var dayAndDate = content.querySelector('.step-title');
+    var subject = content.querySelectorAll('.mb-4');
 
-    final parts = text.split('\n').map((part) => part.trim()).toList();
+    days.add(dayAndDate!);
+    subjects.add(subject);
+  }
 
-    final nonEmptyParts = parts.where((part) => part.isNotEmpty).toList();
+  for (int i = 0; i < days.length; i++) {
+    homeMadeJson[days[i].text.trim()] = {};
+    for (int j = 1; j < subjects[i].length; j++) {
+      String courseName = subjects[i][j].querySelector('p')?.text ?? '';
+      String time = subjects[i][j]
+              .querySelector('li.list-inline-item:first-child')
+              ?.text ??
+          '';
+      String location = subjects[i][j]
+              .querySelector('li.list-inline-item:last-child')
+              ?.text ??
+          '';
 
-    return nonEmptyParts;
-  }).toList();
+      var lessonName =
+          courseName.trim().replaceAll('\n', '').replaceAll('\t', '');
 
-  List<String> parsedSchedule = classEntities[0];
+      homeMadeJson[days[i].text.trim()]![j] = {};
 
-  RegExp datePattern = RegExp(r"^[А-Яа-я]{2},\s+\d{2}\s+[А-Яа-я]+");
-  RegExp fullName = RegExp(r'^[А-ЯЁ][а-яё]*\s[А-ЯЁ][а-яё]*\s[А-ЯЁ][а-яё]*$');
-
-  String dayNow = '';
-  int cnt = 1;
-
-  for (int i = 0; i < parsedSchedule.length; i++) {
-    if (datePattern.hasMatch(parsedSchedule[i])) {
-      dayCards[parsedSchedule[i]] = {};
-      dayNow = parsedSchedule[i];
-      cnt = 1;
-    } else {
-      if (!dayCards[dayNow]!.containsKey(cnt)) {
-        dayCards[dayNow]![cnt] = [];
-        dayCards[dayNow]![cnt]!.add(parsedSchedule[i]);
-      } else if (ifClassroom(parsedSchedule[i])) {
-        if (i < parsedSchedule.length - 1 &&
-            !ifClassroom(parsedSchedule[i + 1])) {
-          dayCards[dayNow]![cnt]!.add(parsedSchedule[i]);
-          cnt += 1;
-        } else {
-          continue;
-        }
-      } else if (fullName.hasMatch(parsedSchedule[i]) ||
-          parsedSchedule[i].split(' ')[0] == 'Бояр-созонович') {
-        continue;
-      } else {
-        dayCards[dayNow]![cnt]!.add(parsedSchedule[i]);
-      }
+      homeMadeJson[days[i].text.trim()]![j]!['subject'] =
+          lessonName.substring(0, lessonName.length - 2);
+      homeMadeJson[days[i].text.trim()]![j]!['type'] =
+          lessonName.substring(lessonName.length - 2, lessonName.length);
+      homeMadeJson[days[i].text.trim()]![j]!['time'] = time.trim();
+      homeMadeJson[days[i].text.trim()]![j]!['location'] = location.trim();
     }
   }
-  return dayCards.keys.toList();
+  return Schedule.fromJson(homeMadeJson);
 }

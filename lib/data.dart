@@ -106,30 +106,3 @@ const List<String> weeks = [
   '17. 29.05.2023 - 04.06.2023',
   '18. 05.06.2023 - 11.06.2023'
 ];
-
-bool ifClassroom(String a) {
-  if (a.contains('1-') ||
-      a.contains('2-') ||
-      a.contains('3-') ||
-      a.contains('4-') ||
-      a.contains('5-') ||
-      a.contains('6-') ||
-      a.contains('7-') ||
-      a.contains('8-') ||
-      a.contains('9-') ||
-      a.contains('10-') ||
-      a.contains('11-') ||
-      a.contains('16-') ||
-      a.contains('21-') ||
-      a.contains('24-') ||
-      a.contains('ГУК') ||
-      a.contains('ГАК') ||
-      a.contains('Орш.') ||
-      a.contains('Берн.') ||
-      a == '--cтадион' ||
-      a == '--каф.') {
-    return true;
-  } else {
-    return false;
-  }
-}

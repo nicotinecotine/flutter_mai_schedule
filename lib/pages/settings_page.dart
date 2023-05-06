@@ -47,6 +47,7 @@ class _SettingsColumnState extends State<SettingsColumn> {
                     },
                   ).toList(),
                   onChanged: (group) {
+                    state.undownload();
                     state.updateSelectedGroup(group!);
                   },
                   value: state.selectedGroup,
@@ -65,6 +66,7 @@ class _SettingsColumnState extends State<SettingsColumn> {
                     },
                   ).toList(),
                   onChanged: (week) {
+                    state.undownload();
                     state.updateSelectedWeek(week!);
                   },
                   value: state.selectedWeek,
@@ -82,20 +84,18 @@ class _SettingsColumnState extends State<SettingsColumn> {
               ],
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              CupertinoSwitch(
+          Container(
+            padding: const EdgeInsets.only(left: 5, top: 5),
+            child: Transform.scale(
+              scale: 1.2,
+              child: CupertinoSwitch(
                 value: state.isDark,
                 activeColor: Colors.indigo,
                 onChanged: ((value) {
-                  state.changeTheme(state.isDark);
-                  if (state.didListViewBuild == true) {
-                    state.fetchData(state.parsedSchedule);
-                  }
+                  state.changeTheme();
                 }),
               ),
-            ],
+            ),
           ),
         ],
       ),
